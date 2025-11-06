@@ -1,0 +1,25 @@
+import java.util.*;
+
+public class AutoBoxingExample {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        List<Integer> numbers = new ArrayList<>();
+
+        System.out.print("Enter numbers separated by space: ");
+        String input = sc.nextLine();
+        String[] values = input.split(" ");
+
+        for (String val : values) {
+            // Autoboxing: converting primitive int → Integer
+            numbers.add(Integer.parseInt(val));
+        }
+
+        int sum = 0;
+        for (Integer num : numbers) {
+            // Unboxing: converting Integer → primitive int
+            sum += num;
+        }
+
+        System.out.println("Sum of entered integers: " + sum);
+    }
+}
