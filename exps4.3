@@ -1,0 +1,111 @@
+import java.util.*;
+import java.util.concurrent.*;
+
+class Seat {
+    private int seatNumber;
+    private boolean isBooked = false;
+
+    public Seat(int seatNumber) {
+        this.seatNumber = seatNumber;
+    }
+
+    public int getSeatNumber() {
+        return seatNumber;
+    }
+
+    public synchronized boolean book(String user) {
+        if (!isBooked) {
+            isBooked = true;
+            System.out.println("✅ Seat " + seatNumber + " successfully booked by " + user);
+            return true;
+        } else {
+            System.out.println("❌ Seat " + seatNumber + " is already booked.");
+            return false;
+        }
+    }
+}
+
+class TicketBookingSystem {
+    private Map<Integer, Seat> seats = new ConcurrentHashMap<>();
+
+    public TicketBookingSystem(int totalSeats) {
+        for (int i = 1; i <= totalSeats; i++) {
+            seats.put(i, new Seat(i));
+        }
+    }
+
+    public void bookSeat(int seatNumber, String user) {
+        Seat seat = seats.get(seatNumber);
+        if (seat != null) {
+            seat.book(user);
+        } else {
+            System.out.println("⚠️ Seat " + seatNumber + " does not exist.");
+        }
+    }
+
+    public void displayAvailableSeats() {
+        System.out.print("\nAvailable Seats: ");
+        seats.values().stream()
+                .filter(s -> !isSeatBooked(s))
+                .map(s -> s.getSeatNumber() + "")
+                .forEach(num -> System.out.print(num + " "));
+        System.out.println();
+    }
+
+    private boolean isSeatBooked(Seat seat) {
+        try {
+            var field = Seat.class.getDeclaredField("isBooked");
+            field.setAccessible(true);
+            return field.getBoolean(seat);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+}
+
+class User extends Thread {
+    private TicketBookingSystem system;
+    private String userName;
+    private int seatToBook;
+
+    public User(TicketBookingSystem system, String userName, int seatToBook) {
+        this.system = system;
+        this.userName = userName;
+        this.seatToBook = seatToBook;
+    }
+
+    @Override
+    public void run() {
+        system.bookSeat(seatToBook, userName);
+    }
+}
+
+public class ConcurrentBookingDemo {
+    public static void main(String[] args) {
+        TicketBookingSystem bookingSystem = new TicketBookingSystem(5);
+
+        bookingSystem.displayAvailableSeats();
+
+        // Multiple users trying to book seats simultaneously
+        Thread u1 = new User(bookingSystem, "Alice", 3);
+        Thread u2 = new User(bookingSystem, "Bob", 3);
+        Thread u3 = new User(bookingSystem, "Charlie", 2);
+        Thread u4 = new User(bookingSystem, "David", 5);
+
+        u1.start();
+        u2.start();
+        u3.start();
+        u4.start();
+
+        try {
+            u1.join();
+            u2.join();
+            u3.join();
+            u4.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        bookingSystem.displayAvailableSeats();
+    }
+}
